@@ -1,26 +1,104 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
+/*
+ * Identidad visual de Kynesia Spa (ver CLAUDE.md §1.1).
+ * Los colores se definen UNA sola vez acá. En el código se usan como clases
+ * de Tailwind: bg-verde-oliva, text-dorado, bg-crema, text-texto-suave, etc.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Paleta de marca */
+  --verde-oliva: #3f4824;
+  --verde-oliva-claro: #5c6638;
+  --dorado: #c9a44c;
+  --dorado-claro: #e3d3a1;
+  --crema: #f7f4ec;
+  --blanco: #ffffff;
+  --texto: #2b2f1e;
+  --texto-suave: #6e6f62;
+  --alerta: #b5652b;
+
+  /* Tokens que usan los componentes de shadcn/ui, mapeados a la marca */
+  --background: var(--crema);
+  --foreground: var(--texto);
+  --card: var(--blanco);
+  --card-foreground: var(--texto);
+  --popover: var(--blanco);
+  --popover-foreground: var(--texto);
+  --primary: var(--verde-oliva);
+  --primary-foreground: var(--crema);
+  --secondary: var(--crema);
+  --secondary-foreground: var(--texto);
+  --muted: #efebe0;
+  --muted-foreground: var(--texto-suave);
+  --accent: #f1ead6;
+  --accent-foreground: var(--texto);
+  --destructive: var(--alerta);
+  --border: #e4dfd1;
+  --input: #d9d3c2;
+  --ring: var(--dorado);
+  --radius: 0.375rem;
 }
 
 @theme inline {
+  /* Colores de marca como clases de Tailwind */
+  --color-verde-oliva: var(--verde-oliva);
+  --color-verde-oliva-claro: var(--verde-oliva-claro);
+  --color-dorado: var(--dorado);
+  --color-dorado-claro: var(--dorado-claro);
+  --color-crema: var(--crema);
+  --color-blanco: var(--blanco);
+  --color-texto: var(--texto);
+  --color-texto-suave: var(--texto-suave);
+  --color-alerta: var(--alerta);
+
+  /* Tipografías (cargadas en src/app/layout.tsx con next/font) */
+  --font-sans: var(--font-jost);
+  --font-heading: var(--font-cormorant);
+
+  /* Tokens de shadcn/ui */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  /* Títulos: serif fina, con aire entre letras y sin negritas pesadas */
+  h1,
+  h2,
+  h3 {
+    @apply font-heading font-medium tracking-wide;
+  }
 }

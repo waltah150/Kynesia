@@ -1,36 +1,22 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kynesia Spa · Agenda interna
 
-## Getting Started
+Sistema web interno para agendar los turnos de Kynesia Spa (Asunción, Paraguay).
 
-First, run the development server:
+> Proyecto en construcción. Ver [`CLAUDE.md`](CLAUDE.md) para la especificación completa y el plan por fases.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Stack
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Next.js (App Router) + TypeScript · Tailwind CSS + shadcn/ui · Supabase (Postgres + Auth) · Zod · Netlify
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Correr en local
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Instalar dependencias: `npm install`
+2. Copiar `.env.example` como `.env.local` y completar con la URL y la clave pública (publishable) del proyecto de Supabase.
+3. Iniciar: `npm run dev` y abrir http://localhost:3000
 
-## Learn More
+## Estructura
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `src/app/login` — pantalla de inicio de sesión.
+- `src/app/(app)` — pantallas internas (protegidas) con el menú lateral.
+- `src/lib/supabase` — clientes de Supabase para navegador y servidor.
+- `src/proxy.ts` — renueva la sesión y redirige a `/login` a quien no la inició.
