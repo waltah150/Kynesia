@@ -2,6 +2,7 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { getSupabaseConfig } from "./config";
+import type { Database } from "./database.types";
 
 /**
  * Cliente de Supabase para el servidor (Server Components, Server Actions y
@@ -12,7 +13,7 @@ export async function createClient() {
   const { url, publishableKey } = getSupabaseConfig();
   const cookieStore = await cookies();
 
-  return createServerClient(url, publishableKey, {
+  return createServerClient<Database>(url, publishableKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();

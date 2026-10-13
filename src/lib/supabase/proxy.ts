@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseConfig } from "./config";
+import type { Database } from "./database.types";
 
 /** Rutas que se pueden ver sin haber iniciado sesión. */
 const RUTAS_PUBLICAS = ["/login"];
@@ -18,7 +19,7 @@ export async function updateSession(request: NextRequest) {
   const { url, publishableKey } = getSupabaseConfig();
   let response = NextResponse.next({ request });
 
-  const supabase = createServerClient(url, publishableKey, {
+  const supabase = createServerClient<Database>(url, publishableKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();

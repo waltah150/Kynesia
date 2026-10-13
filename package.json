@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:tipos": "npx supabase gen types typescript --linked --schema public > src/lib/supabase/database.types.ts",
+    "db:probar": "npx supabase db query --linked -f supabase/tests/reglas.sql"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
