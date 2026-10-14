@@ -373,6 +373,7 @@ export type Database = {
           id: string
           nombre: string
           orden: number
+          permite_dos_clientes: boolean
           precio: number
           updated_at: string
           visible_web: boolean
@@ -385,6 +386,7 @@ export type Database = {
           id?: string
           nombre: string
           orden?: number
+          permite_dos_clientes?: boolean
           precio: number
           updated_at?: string
           visible_web?: boolean
@@ -397,6 +399,7 @@ export type Database = {
           id?: string
           nombre?: string
           orden?: number
+          permite_dos_clientes?: boolean
           precio?: number
           updated_at?: string
           visible_web?: boolean

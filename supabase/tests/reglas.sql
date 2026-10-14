@@ -6,6 +6,8 @@
 --
 -- Uso:  npx supabase db query --linked -f supabase/tests/reglas.sql
 -- Resultado: una tabla con cada prueba y si pasó (paso = true).
+-- Las pruebas que cuentan filas filtran por los ids de prueba, para no depender
+-- de los datos reales que ya existan en la base.
 -- =============================================================================
 
 begin;
@@ -91,23 +93,26 @@ insert into public.horario_spa (dia_semana, apertura, cierre) values (1, '09:00'
 insert into public.grupos (id, nombre) values ('00000000-0000-4000-c000-000000000001', 'Grupo de prueba');
 insert into public.servicios (id, grupo_id, nombre, duracion_min, precio) values
   ('00000000-0000-4000-c000-000000000002', '00000000-0000-4000-c000-000000000001', 'Servicio de prueba', 60, 150000);
+insert into public.servicios (id, grupo_id, nombre, duracion_min, precio, permite_dos_clientes) values
+  ('00000000-0000-4000-c000-000000000004', '00000000-0000-4000-c000-000000000001', 'Masaje reductor de prueba', 60, 200000, true);
 insert into public.paquetes (id, servicio_id, sesiones, precio) values
   ('00000000-0000-4000-c000-000000000003', '00000000-0000-4000-c000-000000000002', 6, 700000);
 insert into public.clientes (id, nombre, apellido, telefono, creado_por) values
   ('00000000-0000-4000-d000-000000000001', 'Cliente', 'Prueba', '+595981000001', '00000000-0000-4000-a000-000000000001');
 
 -- Atajo: arma un INSERT de turno en hora de Asunción del lunes 2030-01-07.
-create function pg_temp.turno(p_profesional text, p_box int, p_desde text, p_hasta text, p_dia text default '2030-01-07')
+create function pg_temp.turno(p_profesional text, p_box int, p_desde text, p_hasta text, p_dia text default '2030-01-07',
+                               p_servicio text default '00000000-0000-4000-c000-000000000002')
 returns text
 language sql
 as $$
   select format(
     $f$insert into public.turnos (cliente_id, servicio_id, profesional_id, box_id, inicio, fin, precio_cobrado, creado_por)
-       values ('00000000-0000-4000-d000-000000000001', '00000000-0000-4000-c000-000000000002', %L,
+       values ('00000000-0000-4000-d000-000000000001', %L, %L,
                (select id from public.boxes where numero = %s),
                timezone('America/Asuncion', %L::timestamp), timezone('America/Asuncion', %L::timestamp),
                150000, coalesce(auth.uid(), '00000000-0000-4000-a000-000000000001'))$f$,
-    p_profesional, coalesce(p_box::text, 'null'), p_dia || ' ' || p_desde, p_dia || ' ' || p_hasta
+    p_servicio, p_profesional, coalesce(p_box::text, 'null'), p_dia || ' ' || p_desde, p_dia || ' ' || p_hasta
   );
 $$;
 
@@ -184,9 +189,9 @@ select pg_temp.probar('Anónimo no puede crear clientes', 'anon',
 -- 5) Seguridad: profesional (Ana)
 -- -----------------------------------------------------------------------------
 select pg_temp.probar('Profesional ve los servicios', '00000000-0000-4000-a000-000000000002',
-  'select * from public.servicios', 'ok:1');
+  $$select * from public.servicios where grupo_id = '00000000-0000-4000-c000-000000000001'$$, 'ok:2');
 select pg_temp.probar('Profesional ve todos los turnos (también los de otras)', '00000000-0000-4000-a000-000000000002',
-  'select * from public.turnos', 'ok:4');
+  $$select * from public.turnos where cliente_id = '00000000-0000-4000-d000-000000000001'$$, 'ok:4');
 select pg_temp.probar('Profesional NO puede crear servicios', '00000000-0000-4000-a000-000000000002',
   $$insert into public.servicios (grupo_id, nombre, duracion_min, precio)
     values ('00000000-0000-4000-c000-000000000001', 'Nuevo', 30, 1000)$$, '42501');
@@ -237,6 +242,29 @@ select pg_temp.probar('Usuario desactivado no ve turnos', '00000000-0000-4000-a0
   'select * from public.turnos', 'ok:0');
 select pg_temp.probar('Usuario desactivado no puede crear clientes', '00000000-0000-4000-a000-000000000003',
   $$insert into public.clientes (nombre, apellido, telefono) values ('X', 'Y', '+595981000098')$$, '42501');
+
+-- -----------------------------------------------------------------------------
+-- 7) Atención doble (servicios que permiten 2 clientes a la vez, en boxes distintos)
+--    Ana tiene libre la tarde del lunes. "Masaje reductor de prueba" = …c004.
+-- -----------------------------------------------------------------------------
+select pg_temp.probar('Atención doble: 1er cliente (15:00–16:00, box 3)', 'postgres',
+  pg_temp.turno('00000000-0000-4000-b000-000000000001', 3, '15:00', '16:00', p_servicio => '00000000-0000-4000-c000-000000000004'), 'ok:1');
+select pg_temp.probar('Atención doble: 2º cliente a la vez (15:30–16:30, box 4)', 'postgres',
+  pg_temp.turno('00000000-0000-4000-b000-000000000001', 4, '15:30', '16:30', p_servicio => '00000000-0000-4000-c000-000000000004'), 'ok:1');
+select pg_temp.probar('Atención doble: un 3er cliente a la vez se rechaza', 'postgres',
+  pg_temp.turno('00000000-0000-4000-b000-000000000001', 1, '15:45', '16:15', p_servicio => '00000000-0000-4000-c000-000000000004'), '23P01');
+select pg_temp.probar('Servicio normal encima de una atención doble se rechaza', 'postgres',
+  pg_temp.turno('00000000-0000-4000-b000-000000000001', 1, '16:00', '17:00'), '23P01');
+select pg_temp.probar('Atención doble encima de un servicio normal se rechaza', 'postgres',
+  pg_temp.turno('00000000-0000-4000-b000-000000000001', 3, '11:30', '12:30', p_servicio => '00000000-0000-4000-c000-000000000004'), '23P01');
+select pg_temp.probar('Atención doble en el mismo box que otro turno se rechaza', 'postgres',
+  pg_temp.turno('00000000-0000-4000-b000-000000000002', 3, '15:00', '16:00', p_servicio => '00000000-0000-4000-c000-000000000004'), '23P01');
+select pg_temp.probar('Atención doble: cuando termina uno, entra otro (16:30–17:30)', 'postgres',
+  pg_temp.turno('00000000-0000-4000-b000-000000000001', 3, '16:30', '17:30', p_servicio => '00000000-0000-4000-c000-000000000004'), 'ok:1');
+select pg_temp.probar('Cambiar el estado de un turno doble no vuelve a validar', 'postgres',
+  $$update public.turnos set estado = 'confirmado'
+    where servicio_id = '00000000-0000-4000-c000-000000000004'
+      and inicio = timezone('America/Asuncion', '2030-01-07 15:00'::timestamp)$$, 'ok:1');
 
 -- -----------------------------------------------------------------------------
 -- Resumen

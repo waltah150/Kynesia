@@ -89,7 +89,7 @@ Nota: las vistas "por recurso" de FullCalendar (una columna por profesional o po
 - Al tocar un turno existente: ver, editar, mover, cambiar estado o cancelar.
 - Arrastrar y soltar para mover turnos, validando disponibilidad.
 - **Validaciones** (en la base de datos, no solo en pantalla):
-  - Una profesional no puede tener dos turnos superpuestos.
+  - Una profesional no puede tener dos turnos superpuestos, **salvo atención doble**: si ambos turnos son de servicios marcados con "Permite atender 2 clientes a la vez" (ej. masaje reductor), puede tener hasta 2 a la vez, en boxes distintos.
   - Un box no puede tener dos turnos superpuestos.
   - El turno debe estar dentro del horario del spa.
 - **Alertas con signo "!"**:
@@ -148,14 +148,14 @@ Una sola pantalla con dos pestañas.
 - `horarios_profesional` — profesional, día de la semana, inicio, fin (horario semanal fijo; puede haber varios rangos por día).
 - `clientes` — nombre, apellido, teléfono (único), notas, activo.
 - `grupos` — nombre, orden, activo.
-- `servicios` (subgrupos) — grupo, nombre, duración_min, precio, activo, visible_web.
+- `servicios` (subgrupos) — grupo, nombre, duración_min, precio, activo, visible_web, permite_dos_clientes.
 - `profesional_servicios` — qué profesional realiza qué servicio.
 - `paquetes` — servicio, cantidad de sesiones, precio, activo.
 - `promociones` — servicio o paquete; precio promocional; inicio; fin.
 - `turnos` — cliente, servicio, profesional, box (opcional), inicio, fin, precio cobrado (copia del precio al momento de agendar), estado, notas, creado_por, google_event_id (vacío por ahora, para la futura sincronización con Google Calendar), origen (`interno` / `web`).
 
 Reglas:
-- Superposiciones bloqueadas con restricciones de exclusión de Postgres (extensión `btree_gist`) por profesional y por box, ignorando turnos cancelados.
+- Superposiciones bloqueadas en la base, ignorando turnos cancelados: por box con una restricción de exclusión de Postgres (extensión `btree_gist`); por profesional con un trigger que además permite la atención doble.
 - Fechas guardadas como `timestamptz`; se muestran en America/Asuncion.
 - Nada se borra físicamente si tiene historial: se desactiva.
 - Usar migraciones de Supabase versionadas en el repositorio (`supabase/migrations`).
@@ -195,3 +195,4 @@ En cada fase: explicar qué se va a hacer, hacerlo, probarlo y hacer commit con 
 - Los horarios de las profesionales son semanales y permanentes hasta que se editen.
 - Las profesionales pueden ver los turnos de las demás.
 - Los paquetes por ahora solo registran el precio; no llevan la cuenta de sesiones usadas por cliente.
+- Atención doble: algunos servicios permiten que una profesional atienda a 2 clientes a la vez (máximo 2, en boxes distintos, y solo combinando servicios que lo permitan). En la agenda, esos turnos se muestran lado a lado y la profesional sigue apareciendo disponible para un 2º cliente de ese tipo de servicio.
