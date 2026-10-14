@@ -88,6 +88,9 @@ update public.perfiles set profesional_id = '00000000-0000-4000-b000-00000000000
 update public.perfiles set activo = false where id = '00000000-0000-4000-a000-000000000003';
 
 -- El spa abre los lunes de 09:00 a 19:00. El 7 de enero de 2030 es lunes.
+-- Se parte de un horario vacío para no chocar con el horario real cargado
+-- (el borrado también se deshace con el ROLLBACK final).
+delete from public.horario_spa where true;
 insert into public.horario_spa (dia_semana, apertura, cierre) values (1, '09:00', '19:00');
 
 insert into public.grupos (id, nombre) values ('00000000-0000-4000-c000-000000000001', 'Grupo de prueba');
@@ -265,6 +268,64 @@ select pg_temp.probar('Cambiar el estado de un turno doble no vuelve a validar',
   $$update public.turnos set estado = 'confirmado'
     where servicio_id = '00000000-0000-4000-c000-000000000004'
       and inicio = timezone('America/Asuncion', '2030-01-07 15:00'::timestamp)$$, 'ok:1');
+
+-- -----------------------------------------------------------------------------
+-- 8) Clientes y profesionales (Fase 4)
+-- -----------------------------------------------------------------------------
+select pg_temp.probar('Búsqueda de clientes sin tildes ni mayúsculas', 'postgres',
+  $$insert into public.clientes (nombre, apellido, telefono) values ('José', 'GÓMEZ Núñez', '+595981000003')$$, 'ok:1');
+select pg_temp.probar('…"jose gomez nunez" encuentra a "José GÓMEZ Núñez"', '00000000-0000-4000-a000-000000000002',
+  $$select 1 from public.clientes where busqueda like '%jose gomez nunez%'$$, 'ok:1');
+select pg_temp.probar('…y también por parte del teléfono', '00000000-0000-4000-a000-000000000002',
+  $$select 1 from public.clientes where busqueda like '%981000003%'$$, 'ok:1');
+
+select pg_temp.probar('Cliente sin teléfono se puede crear', '00000000-0000-4000-a000-000000000002',
+  $$insert into public.clientes (nombre, apellido) values ('Sin', 'Teléfono Uno')$$, 'ok:1');
+select pg_temp.probar('Varios clientes sin teléfono no chocan entre sí', '00000000-0000-4000-a000-000000000002',
+  $$insert into public.clientes (nombre, apellido) values ('Sin', 'Teléfono Dos')$$, 'ok:1');
+select pg_temp.probar('…y se encuentran con el buscador', '00000000-0000-4000-a000-000000000002',
+  $$select 1 from public.clientes where busqueda like '%sin telefono%'$$, 'ok:2');
+
+-- Horario de Ana: lunes 09:00–12:00. Sus turnos del lunes a la tarde (atención doble:
+-- 15:00, 15:30 y 16:30) quedan fuera; los de la mañana (10:00 y 11:00) quedan dentro.
+select pg_temp.probar('Profesional guarda su horario y ve cuántos turnos quedan fuera (3)', '00000000-0000-4000-a000-000000000002',
+  $$select 1 where public.guardar_horario_profesional('00000000-0000-4000-b000-000000000001',
+    '[{"dia_semana":1,"inicio":"09:00","fin":"12:00"},{"dia_semana":3,"inicio":"14:00","fin":"18:00"}]') = 3$$, 'ok:1');
+select pg_temp.probar('…el horario guardado tiene 2 rangos', 'postgres',
+  $$select 1 from public.horarios_profesional where profesional_id = '00000000-0000-4000-b000-000000000001'$$, 'ok:2');
+select pg_temp.probar('Horario con rangos que se pisan se rechaza…', '00000000-0000-4000-a000-000000000002',
+  $$select public.guardar_horario_profesional('00000000-0000-4000-b000-000000000001',
+    '[{"dia_semana":2,"inicio":"09:00","fin":"13:00"},{"dia_semana":2,"inicio":"12:00","fin":"15:00"}]')$$, '23P01');
+select pg_temp.probar('…y no deja el horario a medias (siguen los 2 rangos anteriores)', 'postgres',
+  $$select 1 from public.horarios_profesional where profesional_id = '00000000-0000-4000-b000-000000000001'$$, 'ok:2');
+select pg_temp.probar('Profesional NO puede guardar el horario de otra', '00000000-0000-4000-a000-000000000002',
+  $$select public.guardar_horario_profesional('00000000-0000-4000-b000-000000000002', '[]')$$, '42501');
+select pg_temp.probar('Profesional NO puede cambiar el horario del spa', '00000000-0000-4000-a000-000000000002',
+  $$select public.guardar_horario_spa('[]')$$, '42501');
+select pg_temp.probar('Admin cambia el horario del spa', '00000000-0000-4000-a000-000000000001',
+  $$select public.guardar_horario_spa('[{"dia_semana":1,"apertura":"09:00","cierre":"19:00"},{"dia_semana":6,"apertura":"09:00","cierre":"13:00"}]')$$, 'ok');
+select pg_temp.probar('…y quedan 2 rangos en el horario del spa', 'postgres',
+  'select 1 from public.horario_spa', 'ok:2');
+
+select pg_temp.probar('Profesional NO puede editar fichas de profesionales', '00000000-0000-4000-a000-000000000002',
+  $$select public.guardar_profesional(null, 'X', 'Y', '#A3B18A', true, '{}', null)$$, '42501');
+select pg_temp.probar('Admin crea una profesional con un grupo de servicios y le vincula una cuenta', '00000000-0000-4000-a000-000000000001',
+  $$select public.guardar_profesional(null, 'Carla', 'Prueba', '#9DB4C0', true,
+    array['00000000-0000-4000-c000-000000000001']::uuid[],
+    '00000000-0000-4000-a000-000000000003')$$, 'ok');
+select pg_temp.probar('…queda con 1 grupo', 'postgres',
+  $$select 1 from public.profesional_grupos pg join public.profesionales p on p.id = pg.profesional_id
+    where p.nombre = 'Carla'$$, 'ok:1');
+select pg_temp.probar('Profesional NO puede asignarse grupos', '00000000-0000-4000-a000-000000000002',
+  $$insert into public.profesional_grupos (profesional_id, grupo_id)
+    values ('00000000-0000-4000-b000-000000000001', '00000000-0000-4000-c000-000000000001')$$, '42501');
+select pg_temp.probar('…y la cuenta queda vinculada a ella', 'postgres',
+  $$select 1 from public.perfiles pe join public.profesionales p on p.id = pe.profesional_id
+    where pe.id = '00000000-0000-4000-a000-000000000003' and p.nombre = 'Carla'$$, 'ok:1');
+select pg_temp.probar('Pasar la cuenta de Ana a Bea deja a Ana sin cuenta', '00000000-0000-4000-a000-000000000001',
+  $$select public.guardar_profesional('00000000-0000-4000-b000-000000000002', 'Bea', 'Prueba', '#D4A373', true, '{}', '00000000-0000-4000-a000-000000000002')$$, 'ok');
+select pg_temp.probar('…Ana ya no tiene cuenta vinculada', 'postgres',
+  $$select 1 from public.perfiles where profesional_id = '00000000-0000-4000-b000-000000000001'$$, 'ok:0');
 
 -- -----------------------------------------------------------------------------
 -- Resumen

@@ -42,34 +42,37 @@ export type Database = {
         Row: {
           activo: boolean
           apellido: string
+          busqueda: string | null
           creado_por: string | null
           created_at: string
           id: string
           nombre: string
           notas: string | null
-          telefono: string
+          telefono: string | null
           updated_at: string
         }
         Insert: {
           activo?: boolean
           apellido: string
+          busqueda?: string | null
           creado_por?: string | null
           created_at?: string
           id?: string
           nombre: string
           notas?: string | null
-          telefono: string
+          telefono?: string | null
           updated_at?: string
         }
         Update: {
           activo?: boolean
           apellido?: string
+          busqueda?: string | null
           creado_por?: string | null
           created_at?: string
           id?: string
           nombre?: string
           notas?: string | null
-          telefono?: string
+          telefono?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -250,35 +253,35 @@ export type Database = {
           },
         ]
       }
-      profesional_servicios: {
+      profesional_grupos: {
         Row: {
           created_at: string
+          grupo_id: string
           profesional_id: string
-          servicio_id: string
         }
         Insert: {
           created_at?: string
+          grupo_id: string
           profesional_id: string
-          servicio_id: string
         }
         Update: {
           created_at?: string
+          grupo_id?: string
           profesional_id?: string
-          servicio_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "profesional_servicios_profesional_id_fkey"
-            columns: ["profesional_id"]
+            foreignKeyName: "profesional_grupos_grupo_id_fkey"
+            columns: ["grupo_id"]
             isOneToOne: false
-            referencedRelation: "profesionales"
+            referencedRelation: "grupos"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "profesional_servicios_servicio_id_fkey"
-            columns: ["servicio_id"]
+            foreignKeyName: "profesional_grupos_profesional_id_fkey"
+            columns: ["profesional_id"]
             isOneToOne: false
-            referencedRelation: "servicios"
+            referencedRelation: "profesionales"
             referencedColumns: ["id"]
           },
         ]
@@ -509,7 +512,32 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      contar_turnos_fuera_de_horario: {
+        Args: { p_profesional_id: string }
+        Returns: number
+      }
       es_paso_15_min: { Args: { hora: string }; Returns: boolean }
+      fuera_de_horario: {
+        Args: { turno: Database["public"]["Tables"]["turnos"]["Row"] }
+        Returns: boolean
+      }
+      guardar_horario_profesional: {
+        Args: { p_profesional_id: string; p_rangos: Json }
+        Returns: number
+      }
+      guardar_horario_spa: { Args: { p_rangos: Json }; Returns: undefined }
+      guardar_profesional: {
+        Args: {
+          p_activa: boolean
+          p_apellido: string
+          p_color: string
+          p_grupos: string[]
+          p_id: string
+          p_nombre: string
+          p_perfil_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       estado_turno:

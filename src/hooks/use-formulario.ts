@@ -2,7 +2,7 @@
 
 import { useState, useTransition, type FormEvent } from "react";
 import { z } from "zod";
-import type { ResultadoAccion } from "@/lib/validaciones/comunes";
+import { leerFormulario, type ResultadoAccion } from "@/lib/validaciones/comunes";
 
 export type ErroresFormulario = {
   general?: string;
@@ -20,7 +20,10 @@ export type ErroresFormulario = {
 export function useFormulario(
   schema: z.ZodType,
   accion: (formData: FormData) => Promise<ResultadoAccion>,
-  alGuardar: () => void,
+  /** Recibe el resultado (ej. el id de lo que se creó). */
+  alGuardar: (resultado: { ok: true; id?: string }) => void,
+  /** Campos que pueden repetirse (ej. casillas "servicios"): se leen como lista. */
+  camposMultiples: string[] = [],
 ) {
   const [guardando, iniciarTransicion] = useTransition();
   const [errores, setErrores] = useState<ErroresFormulario>({});
@@ -29,7 +32,7 @@ export function useFormulario(
     evento.preventDefault();
     const formData = new FormData(evento.currentTarget);
 
-    const validacion = schema.safeParse(Object.fromEntries(formData));
+    const validacion = schema.safeParse(leerFormulario(formData, camposMultiples));
     if (!validacion.success) {
       setErrores({ campos: z.flattenError(validacion.error).fieldErrors });
       return;
@@ -39,7 +42,7 @@ export function useFormulario(
       const respuesta = await accion(formData);
       if (respuesta.ok) {
         setErrores({});
-        alGuardar();
+        alGuardar(respuesta);
       } else {
         setErrores({ general: respuesta.error, campos: respuesta.fieldErrors });
       }

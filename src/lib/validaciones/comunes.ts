@@ -2,8 +2,18 @@ import { z } from "zod";
 
 /** Resultado de una acción de servidor, listo para mostrar en un formulario. */
 export type ResultadoAccion =
-  | { ok: true }
+  | { ok: true; id?: string }
   | { ok: false; error?: string; fieldErrors?: Record<string, string[] | undefined> };
+
+/**
+ * Convierte un FormData en un objeto para validar con Zod.
+ * Los campos de `camposMultiples` (ej. casillas) se leen como lista.
+ */
+export function leerFormulario(formData: FormData, camposMultiples: string[] = []) {
+  const datos: Record<string, unknown> = Object.fromEntries(formData);
+  for (const campo of camposMultiples) datos[campo] = formData.getAll(campo);
+  return datos;
+}
 
 /** Campo de texto obligatorio, sin espacios sobrantes. */
 export function textoObligatorio(mensaje: string, maximo = 120) {

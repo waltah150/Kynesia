@@ -5,6 +5,12 @@ const MENSAJES_POR_RESTRICCION: Record<string, string> = {
   grupos_nombre_unico: "Ya existe un grupo con ese nombre (puede estar desactivado).",
   servicios_nombre_unico_por_grupo:
     "Ya existe un subgrupo con ese nombre en este grupo (puede estar desactivado).",
+  clientes_telefono_key: "Ya hay un cliente con ese teléfono (puede estar desactivado).",
+  clientes_telefono_formato: "El teléfono no es válido.",
+  horario_spa_sin_superposicion: "Hay rangos del horario que se pisan.",
+  horarios_profesional_sin_superposicion: "Hay rangos del horario que se pisan.",
+  horario_spa_pasos_15_min: "Las horas deben ir en pasos de 15 minutos.",
+  horarios_profesional_pasos_15_min: "Las horas deben ir en pasos de 15 minutos.",
 };
 
 /**

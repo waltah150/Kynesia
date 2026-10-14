@@ -98,16 +98,16 @@ Nota: las vistas "por recurso" de FullCalendar (una columna por profesional o po
 
 ### 4.2 Clientes y Profesionales
 
-Una sola pantalla con dos pestañas.
+Una sola pantalla con tres pestañas: Clientes, Profesionales y Horario del spa.
 
 **Clientes**
-- Campos: nombre, apellido, teléfono (obligatorios). Notas (opcional).
-- Teléfono guardado en formato normalizado (+595…) y único, para evitar duplicados.
+- Campos: nombre y apellido (obligatorios). Teléfono y notas (opcionales).
+- Teléfono con selector de país (Paraguay por defecto; también extranjeros), guardado en formato internacional (+595…, +54…) y único si se carga, para evitar duplicados.
 - Lista con búsqueda, editar y desactivar (no borrar, para conservar el historial).
 
 **Profesionales**
 - Se crean a mano desde esta pantalla. Sin límite de cantidad.
-- Campos: nombre, apellido, color en la agenda, activa/inactiva, servicios que realiza.
+- Campos: nombre, apellido, color en la agenda, activa/inactiva, grupos de servicios que realiza (incluye todos los subgrupos del grupo, también los que se agreguen después), cuenta de acceso vinculada.
 - **Horario semanal fijo y editable**: para cada día de la semana, marcar si trabaja y cargar uno o más rangos en pasos de 15 min (ej. lunes 09:00–13:00 y 15:00–19:00). El horario se repite todas las semanas hasta que se modifique.
 - **La agenda toma los horarios de aquí**: no hay horarios escritos en el código.
 - Al guardar un cambio de horario, avisar cuántos turnos futuros quedan fuera del nuevo horario; esos turnos aparecen con "!" en la agenda.
@@ -146,10 +146,10 @@ Una sola pantalla con dos pestañas.
 - `boxes` — número (1 a 4), activo.
 - `profesionales` — nombre, apellido, color, activa.
 - `horarios_profesional` — profesional, día de la semana, inicio, fin (horario semanal fijo; puede haber varios rangos por día).
-- `clientes` — nombre, apellido, teléfono (único), notas, activo.
+- `clientes` — nombre, apellido, teléfono (opcional, único), notas, activo.
 - `grupos` — nombre, orden, activo.
 - `servicios` (subgrupos) — grupo, nombre, duración_min, precio, activo, visible_web, permite_dos_clientes.
-- `profesional_servicios` — qué profesional realiza qué servicio.
+- `profesional_grupos` — qué grupos de servicios realiza cada profesional.
 - `paquetes` — servicio, cantidad de sesiones, precio, activo.
 - `promociones` — servicio o paquete; precio promocional; inicio; fin.
 - `turnos` — cliente, servicio, profesional, box (opcional), inicio, fin, precio cobrado (copia del precio al momento de agendar), estado, notas, creado_por, google_event_id (vacío por ahora, para la futura sincronización con Google Calendar), origen (`interno` / `web`).
